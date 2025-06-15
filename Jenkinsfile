@@ -1,21 +1,39 @@
 pipeline {
     agent any
+    environment {
+        AWS_ACCESS_KEY_ID = 'your_aws_access_key_id'
+        AWS_SECRET_ACCESS_KEY = 'your_aws_secret_access_key'
+        AWS_DEFAULT_REGION = 'us-east-1'  // change if your AWS region is different
+    }
     stages {
-        stage('Clone') {
+        stage('Clone GitHub Repo') {
             steps {
-                echo 'Code already pulled by Jenkins using this Jenkinsfile.'
+                checkout scm
             }
         }
         stage('Build') {
             steps {
-                echo 'This is the build step — put compile/test commands here.'
+                echo 'Building project...'
+                // Add your build commands here (e.g., npm install, mvn clean install, etc.)
             }
         }
-        stage('Deploy') {
+        stage('Deploy to AWS') {
             steps {
-                echo 'Deploying to /var/www/html...'
-                sh 'sudo cp -r * /var/www/html/'
+                echo 'Deploying to AWS...'
+                sh '''
+                # Your deployment script, for example, using AWS CLI:
+                aws s3 cp ./build/ s3://your-s3-bucket-name/ --recursive
+                # If you're using EC2 or other services, replace with your deployment commands
+                '''
             }
+        }
+    }
+    post {
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed.'
         }
     }
 }
