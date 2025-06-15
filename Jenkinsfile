@@ -1,9 +1,7 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = 'your_aws_access_key_id'
-        AWS_SECRET_ACCESS_KEY = 'your_aws_secret_access_key'
-        AWS_DEFAULT_REGION = 'us-east-1'  // change if your AWS region is different
+        AWS_DEFAULT_REGION = 'us-east-1'  // Replace with your AWS region
     }
     stages {
         stage('Clone GitHub Repo') {
@@ -20,11 +18,19 @@ pipeline {
         stage('Deploy to AWS') {
             steps {
                 echo 'Deploying to AWS...'
-                sh '''
-                # Your deployment script, for example, using AWS CLI:
-                aws s3 cp ./build/ s3://your-s3-bucket-name/ --recursive
-                # If you're using EC2 or other services, replace with your deployment commands
-                '''
+                withCredentials([usernamePassword(credentialsId: 'aws-jenkins-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        // Set the AWS environment variables
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+
+                        # Example deployment script using AWS CLI:
+                        aws s3 cp ./build/ s3://your-s3-bucket-name/ --recursive
+                        '''
+                    }
+                }
             }
         }
     }
