@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'us-east-1'  // Specify your AWS region
     }
     stages {
         stage('Clone GitHub Repo') {
@@ -9,38 +9,38 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Building project...'
-                // Add your build commands here, for example:
-                // For Node.js (npm build)
-                // sh 'npm install'
-                // sh 'npm run build'
-                // For Maven (Java project)
-                // sh 'mvn clean install'
-                // For other projects, adjust accordingly
-
-                // Add a step to list the files in the workspace
-                sh 'ls -R'
+                echo 'Installing dependencies...'
+                // Run composer to install dependencies for the Laravel project
+                sh 'composer install --no-dev --optimize-autoloader'
+            }
+        }
+        stage('Build Assets') {
+            steps {
+                echo 'Building assets...'
+                // Example: If you are using frontend assets like using Vite, npm, or any other tools
+                // sh 'npm install'  // If you have a frontend build process
+                // sh 'npm run prod'  // For example, to build production assets
             }
         }
         stage('Deploy to AWS') {
             steps {
-                echo 'Deploying to AWS...'
+                echo 'Deploying entire project to AWS S3...'
                 withCredentials([usernamePassword(credentialsId: 'aws-jenkins-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
-                        // Debug: List files in the build directory
-                        sh 'ls -R ./build'
+                        // Debug: List files in the project directory (to ensure everything is in place)
+                        sh 'ls -R'  // List all files recursively in the project
 
-                        // Ensure that the path to the build directory is correct
-                        // If the build outputs to another directory (e.g., ./dist), change it here
+                        // Deploy the entire project directory to the S3 bucket
+                        // This will deploy all directories: app/, bootstrap/, config/, database/, public/, resources/, storage/, and other project files
                         sh '''
                         export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
                         export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                         export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
 
-                        # Deploy to S3 using the correct path to your build output directory
-                        aws s3 cp ./build/ s3://your-s3-bucket-name/ --recursive
+                        # Deploy the entire project to S3 (excluding certain files like .git, vendor, and node_modules)
+                        aws s3 cp ./ s3://your-s3-bucket-name/ --recursive --exclude ".git/*" --exclude "vendor/*" --exclude "node_modules/*" --exclude "storage/*" --exclude "tests/*"
                         '''
                     }
                 }
